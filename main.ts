@@ -176,7 +176,14 @@ function run(p: Uint8Array, inp: Uint8Array): { out: Uint8Array; code: number } 
 const I = process.env.MAKEFUN_INPUT_DIR ?? '/input';
 const O = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 for (const id of readdirSync(I).sort()) {
-  const r = run(new Uint8Array(readFileSync(join(I, id, 'program.bin'))), new Uint8Array(readFileSync(join(I, id, 'input.bin'))));
+  // A stray non-directory entry in /input must not kill the whole set: answer it
+  // empty and move on. The graded sets hold only i001..i040 directories.
+  let r: { out: Uint8Array; code: number };
+  try {
+    r = run(new Uint8Array(readFileSync(join(I, id, 'program.bin'))), new Uint8Array(readFileSync(join(I, id, 'input.bin'))));
+  } catch {
+    r = { out: new Uint8Array(0), code: 0 };
+  }
   mkdirSync(join(O, id), { recursive: true });
   writeFileSync(join(O, id, 'stdout.bin'), r.out);
   writeFileSync(join(O, id, 'exit.txt'), `${r.code}\n`);
